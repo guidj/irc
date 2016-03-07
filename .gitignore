@@ -1,0 +1,5 @@
+*.pyc
+*.log
+app-env/
+
+.idea
