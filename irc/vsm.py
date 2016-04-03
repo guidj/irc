@@ -19,50 +19,6 @@ sample_corpus = [
 ]
 
 
-class Document(object):
-
-    def __init__(self, id, body):
-        self.id = id
-        self.body = body
-
-    def __repr__(self):
-
-        return '{}: [{}...]'.format(
-            self.id,
-            self.body[0:20]
-        )
-
-
-def read_corpus_from_file(filepath):
-
-    id_mark = '.I'
-    body_mark = '.W'
-
-    documents = []
-
-    with open(filepath, 'r') as fp:
-
-        sentences = []
-        document_id = None
-
-        for line in fp:
-
-            if line.startswith(id_mark):
-
-                # save previous doc
-                if document_id:
-
-                    document = Document(document_id, '\n'.join(sentences))
-                    documents.append(document)
-
-                document_id = int(line.replace(id_mark, '').strip())
-                sentences = []
-            elif line.startswith(body_mark):
-                pass
-            else:
-                sentences.append(line)
-
-
 def preprocess_document(doc):
     """
     [tokens]
@@ -146,6 +102,16 @@ def launch_query(corpus, q):
 
 if __name__ == '__main__':
 
-    launch_query(sample_corpus, 'path')
+    import os
+    import sys
+
+    corpus_path = sys.argv[1]
+
+    # launch_query(sample_corpus, 'path')
+    # read_corpus_from_file(corpus_path)
+
+
+
+
 
 
