@@ -1,4 +1,5 @@
 import operator
+import collections
 
 import gensim
 import nltk.corpus
@@ -23,7 +24,7 @@ def create_dictionary(corpus):
 
     pdocs = (pre_process_document(doc.body) for doc in corpus.docs)
     dictionary = gensim.corpora.Dictionary(pdocs)
-    # dictionary.save('/tmp/vsm.dict')
+
     return dictionary
 
 
@@ -106,7 +107,7 @@ class Index(object):
     def model(self):
         raise NotImplementedError
 
-    def search(self, q, n):
+    def search(self, q, n=None, feedback=None):
         raise NotImplementedError
 
     @property
@@ -127,9 +128,28 @@ class BinaryIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q, n=10):
+    def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
+
+        if feedback:
+            _docs_term = {}
+            _chosen_terms = []
+            _counter = collections.Counter()
+
+            for doc in self.corpus.docs:
+                if doc.id in feedback:
+                    _docs_term[doc.id] = set(pre_process_document(doc.body))
+                    for _term in _docs_term[doc.id]:
+                        _counter[_term] += 1
+
+            for _term, _count in _counter.items():
+                if _count >= len(feedback)/2.0 and _term not in pq:
+                    _chosen_terms.append(_term)
+                    pq.append(_term)
+
+            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+
         vq = self._dictionary.doc2bow(pq)
 
         terms = [x[0] for x in vq]
@@ -167,9 +187,28 @@ class TFIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q, n=10):
+    def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
+
+        if feedback:
+            _docs_term = {}
+            _chosen_terms = []
+            _counter = collections.Counter()
+
+            for doc in self.corpus.docs:
+                if doc.id in feedback:
+                    _docs_term[doc.id] = set(pre_process_document(doc.body))
+                    for _term in _docs_term[doc.id]:
+                        _counter[_term] += 1
+
+            for _term, _count in _counter.items():
+                if _count >= len(feedback) / 2.0 and _term not in pq:
+                    _chosen_terms.append(_term)
+                    pq.append(_term)
+
+            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = self.index[qtfidf]
@@ -195,9 +234,28 @@ class TFIDFIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q, n=10):
+    def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
+
+        if feedback:
+            _docs_term = {}
+            _chosen_terms = []
+            _counter = collections.Counter()
+
+            for doc in self.corpus.docs:
+                if doc.id in feedback:
+                    _docs_term[doc.id] = set(pre_process_document(doc.body))
+                    for _term in _docs_term[doc.id]:
+                        _counter[_term] += 1
+
+            for _term, _count in _counter.items():
+                if _count >= len(feedback) / 2.0 and _term not in pq:
+                    _chosen_terms.append(_term)
+                    pq.append(_term)
+
+            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = self.index[qtfidf]
@@ -226,9 +284,28 @@ class TFIDFSmoothIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q, n=10):
+    def search(self, q,  n=None, feedback=None):
 
         pq = pre_process_document(q)
+
+        if feedback:
+            _docs_term = {}
+            _chosen_terms = []
+            _counter = collections.Counter()
+
+            for doc in self.corpus.docs:
+                if doc.id in feedback:
+                    _docs_term[doc.id] = set(pre_process_document(doc.body))
+                    for _term in _docs_term[doc.id]:
+                        _counter[_term] += 1
+
+            for _term, _count in _counter.items():
+                if _count >= len(feedback) / 2.0 and _term not in pq:
+                    _chosen_terms.append(_term)
+                    pq.append(_term)
+
+            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = self.index[qtfidf]

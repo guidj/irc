@@ -25,20 +25,10 @@ def generate_chart(query):
     data = dict(precision=[x for x in query.evaluation['precision']],
                 recall=[x for x in query.evaluation['recall']])
 
-    # create a line chart where each column of measures receives a unique color and dash style
     line = bokeh.charts.TimeSeries(data, y=['precision'], x='recall',
                                    color=['precision'], title=str(query),
                                    ylabel='Precision', legend=True)
 
-    # script_path = os.path.join(STATIC_FOLDER, ''.join(['js/', str(query.id), '.js']))
-
-    # js, tag = bokeh.embed.autoload_static(line, bokeh.resources.CDN, script_path=script_path)
-    #
-    # if os.path.exists(os.path.dirname(script_path)) is False:
-    #     os.makedirs(os.path.dirname(script_path))
-    #
-    # with open(script_path, 'w') as fp:
-    #     fp.write(js)
     script, div = bokeh.embed.components(line)
 
     return {'div': div, 'script': script}

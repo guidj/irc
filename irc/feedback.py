@@ -8,12 +8,12 @@ import irc.domain
 def usage():
 
     msg = """
-    Usage:  python2.7 -m irc.main --index [index] --q [term] --n [10]
+    Usage:  python2.7 -m irc.feedback --index [index] --q [ID]
 
     Where:
 
         --index             : Index type. Options: Binary, TF, TF-IDF, TF-IDF-S
-        --q                 : Search query term
+        --q                 : Query: 1-30
         --n                 : Number of matches to be returned. Default is 10, * for all
     """
 
@@ -40,19 +40,12 @@ def parse_args(inp):
             if i + 1 >= argc:
                 raise RuntimeError('Missing value for parameter --q')
 
-            args['q'] = inp[i + 1]
-
-        elif inp[i] in ('--n', '-n'):
-            if i + 1 >= argc:
-                raise RuntimeError('Missing value for parameter --n')
-
             try:
-                args['n'] = int(inp[i+1])
+                args['q'] = int(inp[i + 1])
             except ValueError:
-                if inp[i+1] == "all":
-                    args['n'] = None
-                else:
-                    raise RuntimeError('Unknown value for parameter -n')
+                raise RuntimeError(
+                    'Invalid --q value: {}. Should be integer between 1 and 30, inclusive'.format(inp[i+1])
+                )
 
     required_params = ('index', 'q')
 
@@ -83,12 +76,46 @@ if __name__ == '__main__':
         print 'Loading corpus...'
 
         corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
+        queries = {query.id: query for query in irc.utils.read_queries(irc.config.FILES['queries'])}
 
         index = irc.domain.model(args['index'])(corpus)
-
-        results = index.search(q=args['q'], n=args['n'])
+        q = queries[args['q']]
+        results = index.search(q=q.term)
 
         pprint(index, ranking=results)
+
+        while True:
+
+            try:
+                inp = input('Choose top N results to give feedback: ')
+                n = int(inp)
+            except ValueError:
+                print '[ERROR] N should an integer between 1 and {}. Try again...'.format(len(results))
+
+            else:
+
+                focused = [rank[0] for rank in results[0:n]]
+                pprint(index, results[0:n])
+
+                while True:
+                    try:
+                        inp = input('List the IDs of the relevant docs (e.g. 1, 13, 46): ')
+                        relevant = [int(x) for x in inp]
+                    except ValueError:
+                        print '[ERROR]: The IDs should an integers. Try again...'
+                        continue
+                    else:
+
+                        feedback = set(focused) & set(relevant)
+                        print '[WARN] Ignoring docs not present in top {}: {}'.format(
+                            n, [x for x in feedback if x not in relevant]
+                        )
+
+                        results = index.search(q=q.term, feedback=feedback)
+                        pprint(index, ranking=results)
+                        break
+
+                # TODO: precision & recall
 
     except RuntimeError as err:
         print err
