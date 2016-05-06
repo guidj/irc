@@ -95,6 +95,7 @@ class Index(object):
         self._dictionary = None
         self._bag_of_words = None
         self._model = None
+        self.index = None
 
         self.create_model(corpus)
 
@@ -159,6 +160,8 @@ class TFIndex(Index):
         self._model = gensim.models.TfidfModel(self._bag_of_words,
                                                wlocal=utils.tf_log,
                                                wglobal=utils.binary_idf)
+        self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words,
+                                                     num_features=len(self._dictionary))
 
     @property
     def model(self):
@@ -166,13 +169,10 @@ class TFIndex(Index):
 
     def search(self, q, n=10):
 
-        index = gensim.similarities.MatrixSimilarity(self._bag_of_words,
-                                                     num_features=len(self._dictionary))
-
         pq = pre_process_document(q)
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
-        sim = index[qtfidf]
+        sim = self.index[qtfidf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
@@ -189,6 +189,7 @@ class TFIDFIndex(Index):
         self._dictionary = create_dictionary(self._corpus)
         self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary)
         self._model = gensim.models.TfidfModel(self._bag_of_words)
+        self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
 
     @property
     def model(self):
@@ -196,12 +197,10 @@ class TFIDFIndex(Index):
 
     def search(self, q, n=10):
 
-        index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
-
         pq = pre_process_document(q)
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
-        sim = index[qtfidf]
+        sim = self.index[qtfidf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
@@ -221,6 +220,7 @@ class TFIDFSmoothIndex(Index):
         self._model = gensim.models.TfidfModel(self._bag_of_words,
                                                wlocal=utils.tf_log,
                                                wglobal=utils.idf_smooth)
+        self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
 
     @property
     def model(self):
@@ -228,12 +228,10 @@ class TFIDFSmoothIndex(Index):
 
     def search(self, q, n=10):
 
-        index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
-
         pq = pre_process_document(q)
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
-        sim = index[qtfidf]
+        sim = self.index[qtfidf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
