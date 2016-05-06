@@ -3,6 +3,7 @@ import os.path
 from . import utils
 from . import models
 from . import contants
+from . import config
 
 
 def usage():
@@ -29,16 +30,7 @@ def parse_args(inp):
 
     for i in range(0, argc):
 
-        if inp[i] in ('--corpora', '-corpora'):
-            if i + 1 >= argc:
-                raise RuntimeError('Missing value for parameter --corpora')
-
-            if not os.path.isfile(inp[i+1]):
-                raise RuntimeError('{} is not a valid file path'.format(inp[i+1]))
-
-            args['corpora'] = inp[i+1]
-
-        elif inp[i] in ('--index', '-index'):
+        if inp[i] in ('--index', '-index'):
             if i + 1 >= argc:
                 raise RuntimeError('Missing value for parameter --index')
 
@@ -65,7 +57,7 @@ def parse_args(inp):
                 else:
                     raise RuntimeError('Unknown value for parameter -n')
 
-    required_params = ('corpora', 'index', 'q')
+    required_params = ('index', 'q')
 
     for param in required_params:
         if param not in args:
@@ -87,6 +79,12 @@ def model(name):
     }[name]
 
 
+def pprint(index, ranking):
+    print index
+    for i, rank in enumerate(ranking):
+        print "[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]])
+
+
 if __name__ == '__main__':
 
     import os
@@ -94,11 +92,15 @@ if __name__ == '__main__':
 
     try:
         args = parse_args(sys.argv[1:])
+        corpuspath = os.path.join([config.CORPUS_DIR, contants.MED_CORPUS])
+
         corpus = utils.read_corpus_from_file(args['corpora'])
 
         index = model(args['index'])(corpus)
 
-        index.search(q=args['q'], n=args['n'])
+        results = index.search(q=args['q'], n=args['n'])
+
+        pprint(index, ranking=results)
 
     except RuntimeError as err:
         print err

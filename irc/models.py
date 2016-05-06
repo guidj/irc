@@ -65,6 +65,14 @@ class Corpus(object):
         self.docs = docs
 
 
+class Query(object):
+
+    def __init__(self, id, term):
+        self.id = id
+        self.term = term
+        self.results = set()
+
+
 class Index(object):
 
     def __init__(self, corpus):
@@ -85,13 +93,9 @@ class Index(object):
     def search(self, q, n):
         raise NotImplementedError
 
-    def pprint(self, ranking, limit):
-
-        for i, rank in enumerate(ranking):
-            print "[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], self._corpus.docs[rank[0]])
-
-            if i > limit:
-                break
+    @property
+    def corpus(self):
+        return self._corpus
 
 
 class BinaryIndex(Index):
@@ -123,11 +127,10 @@ class BinaryIndex(Index):
 
             ranking.append((docid, score))
 
-        ranking = sorted(ranking, key=operator.itemgetter(1), reverse=True)
+        ranking = [x for x in sorted(ranking, key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
 
-        print self
-        self.pprint(ranking, limit)
+        return ranking[0:limit]
 
 
 class TFIndex(Index):
@@ -155,11 +158,11 @@ class TFIndex(Index):
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = index[qtfidf]
-        ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
+
+        ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
 
-        print self
-        self.pprint(ranking, limit)
+        return ranking[0:limit]
 
 
 class TFIDFIndex(Index):
@@ -184,11 +187,11 @@ class TFIDFIndex(Index):
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = index[qtfidf]
-        ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
+
+        ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
 
-        print self
-        self.pprint(ranking, limit)
+        return ranking[0:limit]
 
 
 class TFIDFSmoothIndex(Index):
@@ -216,8 +219,8 @@ class TFIDFSmoothIndex(Index):
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
         sim = index[qtfidf]
-        ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
+
+        ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
 
-        print self
-        self.pprint(ranking, limit)
+        return ranking[0:limit]
