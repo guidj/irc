@@ -37,14 +37,10 @@ def read_corpus_from_file(filepath):
 
 def binary_tf(frequency):
 
-    # print 'binary TF({})'.format(frequency)
-
     return int(frequency > 0)
 
 
 def binary_idf(docfreq, totaldocs):
-
-    # print 'Binary IDF({}, {})'.format(docfreq, totaldocs)
 
     return 1
 
@@ -54,7 +50,6 @@ def tf_log(tf, base=10):
     if tf == 0:
         return 0
     else:
-
         return 1 + math.log(tf, base)
 
 

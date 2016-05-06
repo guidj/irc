@@ -50,7 +50,8 @@ class Document(object):
 
     def __repr__(self):
 
-        return '{}: [{}...]'.format(
+        return "{}({}: '{}...')".format(
+            self.__class__.__name__,
             self.id,
             self.body[0:20]
         )
@@ -81,8 +82,16 @@ class Index(object):
     def model(self):
         raise NotImplementedError
 
-    def search(self, q):
+    def search(self, q, n):
         raise NotImplementedError
+
+    def pprint(self, ranking, limit):
+
+        for i, rank in enumerate(ranking):
+            print "[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], self._corpus.docs[rank[0]])
+
+            if i > limit:
+                break
 
 
 class BinaryIndex(Index):
@@ -98,7 +107,7 @@ class BinaryIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q):
+    def search(self, q, n=10):
 
         pq = pre_process_document(q)
         vq = self._dictionary.doc2bow(pq)
@@ -115,18 +124,10 @@ class BinaryIndex(Index):
             ranking.append((docid, score))
 
         ranking = sorted(ranking, key=operator.itemgetter(1), reverse=True)
-
-        i = 0
+        limit = n if isinstance(n, int) else len(ranking)
 
         print self
-
-        for doc, score in ranking:
-            print "[Score = {:.3f}] Doc({}, '{}...')".format(score, self._corpus.docs[doc].id,
-                                                             self._corpus.docs[doc].body[0:20])
-            i += 1
-
-            if i > 10:
-                break
+        self.pprint(ranking, limit)
 
 
 class TFIndex(Index):
@@ -145,7 +146,7 @@ class TFIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q):
+    def search(self, q, n=10):
 
         index = gensim.similarities.MatrixSimilarity(self._bag_of_words,
                                                      num_features=len(self._dictionary))
@@ -155,17 +156,10 @@ class TFIndex(Index):
         qtfidf = self.model[vq]
         sim = index[qtfidf]
         ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
-        i = 0
+        limit = n if isinstance(n, int) else len(ranking)
 
         print self
-
-        for doc, score in ranking:
-            print "[Score = {:.3f}] Doc({}, '{}...')".format(score, self._corpus.docs[doc].id,
-                                                             self._corpus.docs[doc].body[0:20])
-            i += 1
-
-            if i > 10:
-                break
+        self.pprint(ranking, limit)
 
 
 class TFIDFIndex(Index):
@@ -182,7 +176,7 @@ class TFIDFIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q):
+    def search(self, q, n=10):
 
         index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
 
@@ -191,17 +185,10 @@ class TFIDFIndex(Index):
         qtfidf = self.model[vq]
         sim = index[qtfidf]
         ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
-        i = 0
+        limit = n if isinstance(n, int) else len(ranking)
 
         print self
-
-        for doc, score in ranking:
-            print "[Score = {:.3f}] Doc({}, '{}...')".format(score, self._corpus.docs[doc].id,
-                                                             self._corpus.docs[doc].body[0:20])
-            i += 1
-
-            if i > 10:
-                break
+        self.pprint(ranking, limit)
 
 
 class TFIDFSmoothIndex(Index):
@@ -221,7 +208,7 @@ class TFIDFSmoothIndex(Index):
     def model(self):
         return self._model
 
-    def search(self, q):
+    def search(self, q, n=10):
 
         index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
 
@@ -230,12 +217,7 @@ class TFIDFSmoothIndex(Index):
         qtfidf = self.model[vq]
         sim = index[qtfidf]
         ranking = sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True)
-        i = 0
-        print self
-        for doc, score in ranking:
-            print "[Score = {:.3f}] Doc({}, '{}...')".format(score, self._corpus.docs[doc].id,
-                                                             self._corpus.docs[doc].body[0:20])
-            i += 1
+        limit = n if isinstance(n, int) else len(ranking)
 
-            if i > 10:
-                break
+        print self
+        self.pprint(ranking, limit)

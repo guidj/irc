@@ -3,3 +3,5 @@
 app-env/
 
 .idea
+
+irc/vsm.py
