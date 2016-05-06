@@ -1,7 +1,3 @@
-import os.path
-
-import pandas
-
 import irc.contants
 import irc.config
 import irc.utils

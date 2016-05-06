@@ -8,12 +8,10 @@ import irc.domain
 def usage():
 
     msg = """
-    Usage:
-        python2.7 -m irc.main --corpora [MED.ALL] --index [index] --q [term] --n [10]
+    Usage:  python2.7 -m irc.main --index [index] --q [term] --n [10]
 
     Where:
 
-        --corpora/-corpora  : Path to the MED.ALL file
         --index             : Index type. Options: Binary, TF, TF-IDF, TF-IDF-S
         --q                 : Search query term
         --n                 : Number of matches to be returned. Default is 10, * for all
@@ -93,5 +91,5 @@ if __name__ == '__main__':
 
     except RuntimeError as err:
         print err
-        print usage()
+        usage()
         exit(1)
