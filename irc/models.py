@@ -4,6 +4,7 @@ import gensim
 import nltk.corpus
 import nltk.stem
 import nltk.tokenize
+import pandas
 
 import utils
 
@@ -71,6 +72,20 @@ class Query(object):
         self.id = id
         self.term = term
         self.results = set()
+        self.relevant_docs = set()
+        self.evaluation = pandas.DataFrame(columns=['precision', 'recall'])
+        self.num_docs_retrieved = None
+        self.num_relevant_docs_retrieved = None
+        self.precision = None
+        self.recall = None
+
+    def __repr__(self):
+
+        return "{}({}: '{}...')".format(
+            self.__class__.__name__,
+            self.id,
+            self.term[0:20]
+        )
 
 
 class Index(object):

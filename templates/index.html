@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evaluate</title>
+</head>
+<body>
+<form action="{{ url_for('evaluate') }}" method="post">
+    <select name="index">
+        <option value="Binary">Binary</option>
+        <option value="TF">TF</option>
+        <option value="TF-IDF">TF-IDF</option>
+        <option value="TF-IDF-S">TF-IDF Smooth</option>
+    </select>
+    <input type="submit" value="Evaluate">
+</form>
+</body>
+</html>

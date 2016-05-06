@@ -1,9 +1,8 @@
-import os.path
-
-from . import utils
-from . import models
-from . import contants
-from . import config
+import irc.utils
+import irc.models
+import irc.contants
+import irc.config
+import irc.domain
 
 
 def usage():
@@ -34,7 +33,7 @@ def parse_args(inp):
             if i + 1 >= argc:
                 raise RuntimeError('Missing value for parameter --index')
 
-            if inp[i+1] not in contants.INDEX_MODELS:
+            if inp[i+1] not in irc.contants.INDEX_MODELS:
                 raise RuntimeError('`{}` is not a valid Index model'.format(inp[i+1]))
 
             args['index'] = inp[i+1]
@@ -69,16 +68,6 @@ def parse_args(inp):
     return args
 
 
-def model(name):
-
-    return {
-        'Binary': models.BinaryIndex,
-        'TF': models.TFIndex,
-        'TF-IDF': models.TFIDFIndex,
-        'TF-IDF-S': models.TFIDFSmoothIndex
-    }[name]
-
-
 def pprint(index, ranking):
     print index
     for i, rank in enumerate(ranking):
@@ -92,11 +81,11 @@ if __name__ == '__main__':
 
     try:
         args = parse_args(sys.argv[1:])
-        corpuspath = os.path.join([config.CORPUS_DIR, contants.MED_CORPUS])
+        corpuspath = os.path.join(irc.config.CORPUS_DIR, irc.contants.MED_CORPUS)
 
-        corpus = utils.read_corpus_from_file(args['corpora'])
+        corpus = irc.utils.read_corpus_from_file(corpuspath)
 
-        index = model(args['index'])(corpus)
+        index = irc.domain.model(args['index'])(corpus)
 
         results = index.search(q=args['q'], n=args['n'])
 
