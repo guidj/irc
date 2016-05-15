@@ -9,7 +9,7 @@ from irc import domain
 def usage():
 
     msg = """
-    Usage:  python -m evaluation
+    Usage:  python -m irc.evaluation
     """
 
     print(msg)
@@ -94,13 +94,10 @@ def model(name):
 
 def mkfigure(metrics):
 
-    import numpy as np
+    import matplotlib
+    matplotlib.use('agg')
     import matplotlib.pyplot as plt
-    # import matplotlib.animation as animation
 
-    # x = np.linspace(0, 10)
-    # plt.plot(x, np.sin(x), '--', linewidth=2)
-    # plt.plot(x, np.cos(x), '--', linewidth=2)
     for _name, _data in metrics.items():
         plt.plot(_data['recall'], _data['precision'], '--', linewidth=2, label=_name)
 
@@ -115,42 +112,9 @@ def mkfigure(metrics):
         os.makedirs(os.path.dirname(figname))
 
     plt.savefig(figname)
+    plt.close()
 
     print('Image saved @{}'.format(figname))
-
-
-    # def update_line(num, data, line):
-    #     line.set_data(data[..., :num])
-    #     return line,
-    #
-    # fig1 = plt.figure()
-    #
-    # data = np.random.rand(2, 25)
-    # l, = plt.plot([], [], 'r-')
-    # plt.xlim(0, 1)
-    # plt.ylim(0, 1)
-    # plt.xlabel('x')
-    # plt.title('test')
-    # line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
-    #                                    interval=50, blit=True)
-    # # line_ani.save('lines.mp4')
-    #
-    # fig2 = plt.figure()
-    #
-    # x = np.arange(-9, 10)
-    # y = np.arange(-9, 10).reshape(-1, 1)
-    # base = np.hypot(x, y)
-    # ims = []
-    # for add in np.arange(15):
-    #     ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
-    #
-    # im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
-    #                                    blit=True)
-    # # im_ani.save('im.mp4', metadata={'artist':'Guido'})
-    #
-    # # plt.show()
-    #
-    # plt.savefig('figure.png')
 
 
 if __name__ == '__main__':
@@ -182,40 +146,3 @@ if __name__ == '__main__':
         metrics[name] = summary(queries)
 
     mkfigure(metrics)
-
-    import matplotlib.animation as animation
-    #
-    #
-    # def update_line(num, data, line):
-    #     line.set_data(data[..., :num])
-    #     return line,
-    #
-    #
-    # fig1 = plt.figure()
-    #
-    # data = np.random.rand(2, 25)
-    # l, = plt.plot([], [], 'r-')
-    # plt.xlim(0, 1)
-    # plt.ylim(0, 1)
-    # plt.xlabel('x')
-    # plt.title('test')
-    # line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
-    #                                    interval=50, blit=True)
-    # # line_ani.save('lines.mp4')
-    #
-    # fig2 = plt.figure()
-    #
-    # x = np.arange(-9, 10)
-    # y = np.arange(-9, 10).reshape(-1, 1)
-    # base = np.hypot(x, y)
-    # ims = []
-    # for add in np.arange(15):
-    #     ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
-    #
-    # im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
-    #                                    blit=True)
-    # # im_ani.save('im.mp4', metadata={'artist':'Guido'})
-    #
-    # # plt.show()
-    #
-    # plt.savefig('figure.png')

@@ -1,4 +1,4 @@
-INDEX_MODELS = ('Binary', 'TF', 'TF-IDF', 'TF-IDF-S')
+INDEX_MODELS = ('Binary', 'TF', 'TF-IDF', 'TF-IDF-Prob')
 
 MED_CORPUS = 'MED.ALL'
 MED_QUERY = 'MED.QRY'
