@@ -107,7 +107,7 @@ def mkfigure(scores):
     plt.clf()
 
     for _v in scores:
-        plt.step(_v[1][1], _v[1][0], '--', linewidth=2, label=str(_v[0]))
+        plt.step(_v[1][1], _v[1][0], '-o', linewidth=2, label=str(_v[0]))
 
     plt.title('Feedback System Evaluation')
     plt.xlabel('Recall')
