@@ -1,8 +1,8 @@
 import irc.utils
 import irc.models
-import irc.contants
+import irc.constants
 import irc.config
-import irc.domain
+import irc.evaluation
 
 
 def usage():
@@ -17,7 +17,7 @@ def usage():
         --n                 : Number of matches to be returned. Default is 10, * for all
     """
 
-    print msg
+    print(msg)
 
 
 def parse_args(inp):
@@ -31,7 +31,7 @@ def parse_args(inp):
             if i + 1 >= argc:
                 raise RuntimeError('Missing value for parameter --index')
 
-            if inp[i+1] not in irc.contants.INDEX_MODELS:
+            if inp[i+1] not in irc.constants.INDEX_MODELS:
                 raise RuntimeError('`{}` is not a valid Index model'.format(inp[i+1]))
 
             args['index'] = inp[i+1]
@@ -67,30 +67,34 @@ def parse_args(inp):
 
 
 def pprint(index, ranking):
-    print index
+    print(index)
     for i, rank in enumerate(ranking):
-        print "[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]])
+        print("[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]]))
 
 
 if __name__ == '__main__':
 
-    import os
     import sys
 
     try:
         args = parse_args(sys.argv[1:])
 
-        print 'Loading corpus...'
+        print('Loading corpus...')
 
         corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
 
-        index = irc.domain.model(args['index'])(corpus)
+        index = irc.evaluation.model(args['index'])(corpus)
 
         results = index.search(q=args['q'], n=args['n'])
 
         pprint(index, ranking=results)
 
+        while True:
+            inp = input('\n\nNext query: ')
+
+            results = index.search(q=inp, n=args['n'])
+
     except RuntimeError as err:
-        print err
+        print(err)
         usage()
         exit(1)
