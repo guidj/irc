@@ -7,7 +7,7 @@ from irc import domain
 
 def usage():
     msg = """
-    Usage:  python -m irc.feedback --index [index] --q [ID]
+    Usage:  python -m irc.feedback --index [index] --q [ID] --n [default 10]
 
     Where:
 
