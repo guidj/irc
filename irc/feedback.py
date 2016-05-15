@@ -194,8 +194,6 @@ if __name__ == '__main__':
                         turn += 1
                         break
 
-                        # TODO: precision & recall
-
     except RuntimeError as err:
         print(err)
         usage()
