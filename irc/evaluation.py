@@ -97,7 +97,7 @@ def mkfigure(metrics):
     import matplotlib.pyplot as plt
 
     for _name, _data in metrics.items():
-        plt.plot(_data['recall'], _data['precision'], '--', linewidth=2, label=_name)
+        plt.step(_data['recall'], _data['precision'], '-o', linewidth=2, label=_name)
 
     plt.title('IR Evaluation')
     plt.xlabel('Standard Recall')
