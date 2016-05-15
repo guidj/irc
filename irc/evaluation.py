@@ -67,17 +67,15 @@ def summary(queries):
     n = 11
     m = {
         'precision': [0 for _ in range(0, n)],
-        'recall': [0 for _ in range(0, n)]
+        'recall': [x/float(10) for x in range(0, 10+1, 1)]
     }
 
     for query in queries:
         for i in range(0, n):
             m['precision'][i] += query.evaluation.loc[i]['precision']
-            m['recall'][i] = query.evaluation.loc[i]['recall']
 
     for i in range(0, n):
         m['precision'][i] /= n
-        m['recall'][i] /= n
 
     return m
 
@@ -102,7 +100,7 @@ def mkfigure(metrics):
         plt.plot(_data['recall'], _data['precision'], '--', linewidth=2, label=_name)
 
     plt.title('IR Evaluation')
-    plt.xlabel('Recall')
+    plt.xlabel('Standard Recall')
     plt.ylabel('Precision at recall level x')
     plt.legend()
 
