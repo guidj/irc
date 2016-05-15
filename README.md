@@ -8,7 +8,7 @@ Information Retrieval C
 ### Running Queries
 
 ```sh
-Usage:  python2.7 -m irc.main --index [index] --q [term] --n [10]
+Usage:  python -m irc.main --index [index] --q [term] --n [10]
 
 Where:
 

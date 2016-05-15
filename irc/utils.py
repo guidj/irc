@@ -1,10 +1,32 @@
-import math
 import collections
+import pickle
+import os.path
 
-import irc.models
+
+def save_object(obj, filename):
+    from irc import config
+
+    path = os.path.join(config.DATA_DIR, filename)
+    with open(path, 'wb') as fp:
+        pickle.dump(obj, fp, pickle.HIGHEST_PROTOCOL)
+
+
+def retrieve_object(filename):
+    from irc import config
+
+    path = os.path.join(config.DATA_DIR, filename)
+
+    try:
+        with open(path, 'rb') as fp:
+            d = pickle.load(fp)
+    except IOError:
+        return None
+    else:
+        return d
 
 
 def read_corpus_from_file(filepath):
+    from irc import domain
 
     id_mark = '.I'
     body_mark = '.W'
@@ -23,7 +45,7 @@ def read_corpus_from_file(filepath):
                 # save previous doc
                 if document_id:
 
-                    document = irc.models.Document(document_id, '\n'.join(sentences))
+                    document = domain.Document(document_id, '\n'.join(sentences))
                     documents.append(document)
 
                 document_id = int(line.replace(id_mark, '').strip())
@@ -33,15 +55,16 @@ def read_corpus_from_file(filepath):
                 sentences.append(line)
 
     if document_id:
-        document = irc.models.Document(document_id, '\n'.join(sentences))
+        document = domain.Document(document_id, '\n'.join(sentences))
         documents.append(document)
 
-    corpus = irc.models.Corpus(docs=documents)
+    corpus = domain.Corpus(docs=documents)
 
     return corpus
 
 
 def read_queries(filepath):
+    from irc import domain
 
     id_mark = '.I'
     body_mark = '.W'
@@ -59,7 +82,7 @@ def read_queries(filepath):
 
                 # save previous query
                 if query_id:
-                    query = irc.models.Query(query_id, '\n'.join(sentences).strip())
+                    query = domain.Query(query_id, '\n'.join(sentences).strip())
                     queries.append(query)
 
                 query_id = int(line.replace(id_mark, '').strip())
@@ -69,7 +92,7 @@ def read_queries(filepath):
                 sentences.append(line)
 
         if query_id:
-            query = irc.models.Query(query_id, '\n'.join(sentences).strip())
+            query = domain.Query(query_id, '\n'.join(sentences).strip())
             queries.append(query)
 
     return queries
@@ -89,28 +112,3 @@ def read_relevance(filepath):
 
     return relevance
 
-
-def binary_tf(frequency):
-
-    return int(frequency > 0)
-
-
-def binary_idf(docfreq, totaldocs):
-
-    return 1
-
-
-def tf_log(tf, base=10):
-
-    if tf == 0:
-        return 0
-    else:
-        return 1 + math.log(tf, base)
-
-
-def idf_smooth(idf, base=10):
-
-    if idf == 0:
-        return 0
-    else:
-        return 1 + math.log(1 + idf, base)

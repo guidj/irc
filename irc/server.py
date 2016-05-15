@@ -13,7 +13,7 @@ import bokeh.plotting
 import bokeh.resources
 import flask
 import irc.config
-import irc.domain
+import irc.evaluation
 import irc.utils
 import os.path
 
@@ -57,23 +57,28 @@ def templated(template=None):
     return decorator
 
 
-@app.route('/', methods=['GET'])
-@templated('index.html')
+@app.route('/', methods=['GET'], endpoint='index')
 def index():
-    return {}
+    return flask.render_template('index.html')
 
 
-@app.route('/evaluation', methods=['POST'])
-@templated('evaluation.html')
+@app.route('/evaluation', methods=['GET', 'POST'], endpoint='evaluate')
 def evaluate():
-    idx = flask.request.form['index']
-    corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
-    index = irc.domain.model(idx)(corpus)
 
-    queries = irc.domain.evaluate_index(index)
+    if flask.request.method == 'GET':
 
-    tags = {query.id: generate_chart(query) for query in queries}
-    return {'index': flask.request.form['index'], 'queries': queries, 'tags': tags}
+        return flask.render_template('choose-index.html')
+    else:
+        idx = flask.request.form['index']
+        corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
+        index = irc.evaluation.model(idx)(corpus)
+
+        queries = irc.evaluation.evaluate_index(index)
+
+        tags = {query.id: generate_chart(query) for query in queries}
+        context = {'index': flask.request.form['index'], 'queries': queries, 'tags': tags}
+
+        return flask.render_template('evaluation.html', **context)
 
 
 if __name__ == '__main__':

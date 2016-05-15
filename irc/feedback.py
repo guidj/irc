@@ -1,8 +1,7 @@
-import irc.utils
-import irc.models
-import irc.contants
-import irc.config
-import irc.domain
+from irc import constants
+from irc import config
+from irc import utils
+from irc import evaluation
 
 
 def usage():
@@ -17,7 +16,7 @@ def usage():
         --n                 : Number of matches to be returned. Default is 10, * for all
     """
 
-    print msg
+    print(msg)
 
 
 def parse_args(inp):
@@ -31,7 +30,7 @@ def parse_args(inp):
             if i + 1 >= argc:
                 raise RuntimeError('Missing value for parameter --index')
 
-            if inp[i+1] not in irc.contants.INDEX_MODELS:
+            if inp[i+1] not in constants.INDEX_MODELS:
                 raise RuntimeError('`{}` is not a valid Index model'.format(inp[i+1]))
 
             args['index'] = inp[i+1]
@@ -60,25 +59,24 @@ def parse_args(inp):
 
 
 def pprint(index, ranking):
-    print index
+    print(index)
     for i, rank in enumerate(ranking):
-        print "[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]])
+        print("[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]]))
 
 
 if __name__ == '__main__':
 
-    import os
     import sys
 
     try:
         args = parse_args(sys.argv[1:])
 
-        print 'Loading corpus...'
+        print('Loading corpus...')
 
-        corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
-        queries = {query.id: query for query in irc.utils.read_queries(irc.config.FILES['queries'])}
+        corpus = utils.read_corpus_from_file(config.FILES['corpus'])
+        queries = {query.id: query for query in utils.read_queries(config.FILES['queries'])}
 
-        index = irc.domain.model(args['index'])(corpus)
+        index = evaluation.model(args['index'])(corpus)
         q = queries[args['q']]
         results = index.search(q=q.term)
 
@@ -90,7 +88,7 @@ if __name__ == '__main__':
                 inp = input('Choose top N results to give feedback: ')
                 n = int(inp)
             except ValueError:
-                print '[ERROR] N should an integer between 1 and {}. Try again...'.format(len(results))
+                print('[ERROR] N should an integer between 1 and {}. Try again...'.format(len(results)))
 
             else:
 
@@ -102,13 +100,15 @@ if __name__ == '__main__':
                         inp = input('List the IDs of the relevant docs (e.g. 1, 13, 46): ')
                         relevant = [int(x) for x in inp]
                     except ValueError:
-                        print '[ERROR]: The IDs should an integers. Try again...'
+                        print('[ERROR]: The IDs should an integers. Try again...')
                         continue
                     else:
 
                         feedback = set(focused) & set(relevant)
-                        print '[WARN] Ignoring docs not present in top {}: {}'.format(
-                            n, [x for x in feedback if x not in relevant]
+                        print(
+                                    '[WARN] Ignoring docs not present in top {}: {}'.format(
+                                n, [x for x in feedback if x not in relevant]
+                             )
                         )
 
                         results = index.search(q=q.term, feedback=feedback)
@@ -118,6 +118,6 @@ if __name__ == '__main__':
                 # TODO: precision & recall
 
     except RuntimeError as err:
-        print err
+        print(err)
         usage()
         exit(1)

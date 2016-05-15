@@ -1,5 +1,5 @@
-import operator
 import collections
+import operator
 
 import gensim
 import nltk.corpus
@@ -7,11 +7,8 @@ import nltk.stem
 import nltk.tokenize
 import pandas
 
-import utils
-
 
 def pre_process_document(doc, lang='english'):
-
     stopset = set(nltk.corpus.stopwords.words(lang))
     stemmer = nltk.stem.PorterStemmer()
     tokens = nltk.tokenize.wordpunct_tokenize(doc)
@@ -21,7 +18,6 @@ def pre_process_document(doc, lang='english'):
 
 
 def create_dictionary(corpus):
-
     pdocs = (pre_process_document(doc.body) for doc in corpus.docs)
     dictionary = gensim.corpora.Dictionary(pdocs)
 
@@ -29,14 +25,11 @@ def create_dictionary(corpus):
 
 
 def create_bag_of_words(corpus, dictionary, normalizer=None):
-
     docs = (pre_process_document(d.body) for d in corpus.docs)
     vectors = [dictionary.doc2bow(doc) for doc in docs]
 
     if normalizer:
-
         def normalize_vector(v, norm=normalizer):
-
             return zip((x[0] for x in v), map(norm, (x[1] for x in v)))
 
         vectors = map(normalize_vector, vectors)
@@ -45,13 +38,11 @@ def create_bag_of_words(corpus, dictionary, normalizer=None):
 
 
 class Document(object):
-
     def __init__(self, id, body):
         self.id = id
         self.body = body
 
     def __repr__(self):
-
         return "{}({}: '{}...')".format(
             self.__class__.__name__,
             self.id,
@@ -60,15 +51,12 @@ class Document(object):
 
 
 class Corpus(object):
-
     def __init__(self, docs):
-
         assert isinstance(docs, list)
         self.docs = docs
 
 
 class Query(object):
-
     def __init__(self, id, term):
         self.id = id
         self.term = term
@@ -81,7 +69,6 @@ class Query(object):
         self.recall = None
 
     def __repr__(self):
-
         return "{}({}: '{}...')".format(
             self.__class__.__name__,
             self.id,
@@ -90,7 +77,6 @@ class Query(object):
 
 
 class Index(object):
-
     def __init__(self, corpus):
         self._corpus = corpus
         self._dictionary = None
@@ -116,72 +102,12 @@ class Index(object):
 
 
 class BinaryIndex(Index):
-
     def __str__(self):
         return '{}({})'.format(self.__class__.__name__, len(self._bag_of_words))
 
     def create_model(self, corpus):
         self._dictionary = create_dictionary(self._corpus)
-        self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary, normalizer=utils.binary_tf)
-
-    @property
-    def model(self):
-        return self._model
-
-    def search(self, q, n=None, feedback=None):
-
-        pq = pre_process_document(q)
-
-        if feedback:
-            _docs_term = {}
-            _chosen_terms = []
-            _counter = collections.Counter()
-
-            for doc in self.corpus.docs:
-                if doc.id in feedback:
-                    _docs_term[doc.id] = set(pre_process_document(doc.body))
-                    for _term in _docs_term[doc.id]:
-                        _counter[_term] += 1
-
-            for _term, _count in _counter.items():
-                if _count >= len(feedback)/2.0 and _term not in pq:
-                    _chosen_terms.append(_term)
-                    pq.append(_term)
-
-            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
-
-        vq = self._dictionary.doc2bow(pq)
-
-        terms = [x[0] for x in vq]
-        ranking = []
-
-        for docid, vector in enumerate(self._bag_of_words):
-
-            vector_terms = (x[0] for x in vector)
-
-            score = int(any(set(terms) & set(vector_terms)))
-
-            ranking.append((docid, score))
-
-        ranking = [x for x in sorted(ranking, key=operator.itemgetter(1), reverse=True) if x[1] > 0]
-        limit = n if isinstance(n, int) else len(ranking)
-
-        return ranking[0:limit]
-
-
-class TFIndex(Index):
-
-    def __str__(self):
-        return '{}({})'.format(self.__class__.__name__, len(self._bag_of_words))
-
-    def create_model(self, corpus):
-        self._dictionary = create_dictionary(self._corpus)
-        self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary, normalizer=utils.tf_log)
-        self._model = gensim.models.TfidfModel(self._bag_of_words,
-                                               wlocal=utils.tf_log,
-                                               wglobal=utils.binary_idf)
-        self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words,
-                                                     num_features=len(self._dictionary))
+        self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary, normalizer=binary_tf)
 
     @property
     def model(self):
@@ -207,7 +133,64 @@ class TFIndex(Index):
                     _chosen_terms.append(_term)
                     pq.append(_term)
 
-            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
+
+        vq = self._dictionary.doc2bow(pq)
+
+        terms = [x[0] for x in vq]
+        ranking = []
+
+        for docid, vector in enumerate(self._bag_of_words):
+            vector_terms = (x[0] for x in vector)
+
+            score = int(any(set(terms) & set(vector_terms)))
+
+            ranking.append((docid, score))
+
+        ranking = [x for x in sorted(ranking, key=operator.itemgetter(1), reverse=True) if x[1] > 0]
+        limit = n if isinstance(n, int) else len(ranking)
+
+        return ranking[0:limit]
+
+
+class TFIndex(Index):
+    def __str__(self):
+        return '{}({})'.format(self.__class__.__name__, len(self._bag_of_words))
+
+    def create_model(self, corpus):
+        self._dictionary = create_dictionary(self._corpus)
+        self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary, normalizer=tf_log)
+        self._model = gensim.models.TfidfModel(self._bag_of_words,
+                                               wlocal=tf_log,
+                                               wglobal=binary_idf)
+        self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words,
+                                                          num_features=len(self._dictionary))
+
+    @property
+    def model(self):
+        return self._model
+
+    def search(self, q, n=None, feedback=None):
+
+        pq = pre_process_document(q)
+
+        if feedback:
+            _docs_term = {}
+            _chosen_terms = []
+            _counter = collections.Counter()
+
+            for doc in self.corpus.docs:
+                if doc.id in feedback:
+                    _docs_term[doc.id] = set(pre_process_document(doc.body))
+                    for _term in _docs_term[doc.id]:
+                        _counter[_term] += 1
+
+            for _term, _count in _counter.items():
+                if _count >= len(feedback) / 2.0 and _term not in pq:
+                    _chosen_terms.append(_term)
+                    pq.append(_term)
+
+            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
 
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
@@ -220,7 +203,6 @@ class TFIndex(Index):
 
 
 class TFIDFIndex(Index):
-
     def __str__(self):
         return '{}({})'.format(self.__class__.__name__, len(self._bag_of_words))
 
@@ -254,7 +236,7 @@ class TFIDFIndex(Index):
                     _chosen_terms.append(_term)
                     pq.append(_term)
 
-            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
 
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
@@ -266,25 +248,24 @@ class TFIDFIndex(Index):
         return ranking[0:limit]
 
 
-class TFIDFSmoothIndex(Index):
-
+class TFIDFProbabilisticIndex(Index):
     def __str__(self):
         return '{}({})'.format(self.__class__.__name__, len(self._bag_of_words))
 
     def create_model(self, corpus):
         self._dictionary = create_dictionary(self._corpus)
         self._bag_of_words = create_bag_of_words(self._corpus, self._dictionary,
-                                                 normalizer=utils.tf_log)
+                                                 normalizer=tf_log)
         self._model = gensim.models.TfidfModel(self._bag_of_words,
-                                               wlocal=utils.tf_log,
-                                               wglobal=utils.idf_smooth)
+                                               wlocal=tf_log,
+                                               wglobal=idf_probabilistic)
         self.index = gensim.similarities.MatrixSimilarity(self._bag_of_words, num_features=len(self._dictionary))
 
     @property
     def model(self):
         return self._model
 
-    def search(self, q,  n=None, feedback=None):
+    def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
 
@@ -304,7 +285,7 @@ class TFIDFSmoothIndex(Index):
                     _chosen_terms.append(_term)
                     pq.append(_term)
 
-            print 'Using feedback terms: {}...'.format(_chosen_terms[0:10])
+            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
 
         vq = self._dictionary.doc2bow(pq)
         qtfidf = self.model[vq]
@@ -314,3 +295,29 @@ class TFIDFSmoothIndex(Index):
         limit = n if isinstance(n, int) else len(ranking)
 
         return ranking[0:limit]
+
+
+def binary_tf(frequency):
+    return int(frequency > 0)
+
+
+def binary_idf(docfreq, totaldocs):
+    return 1
+
+
+def tf_log(tf, base=10):
+    import math
+
+    if tf == 0:
+        return 0
+    else:
+        return 1 + math.log(tf, base)
+
+
+def idf_probabilistic(df, total_docs, base=10):
+    import math
+
+    if df == 0:
+        return 0
+    else:
+        return math.log((total_docs - df)/df, base)

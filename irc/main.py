@@ -1,5 +1,5 @@
 import irc.utils
-import irc.models
+import irc.domain
 import irc.constants
 import irc.config
 import irc.evaluation

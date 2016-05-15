@@ -1,18 +1,35 @@
-import irc.contants
-import irc.config
-import irc.utils
-import irc.models
+import os
+import os.path
+
+from irc import config
+from irc import utils
+from irc import domain
+
+
+def usage():
+
+    msg = """
+    Usage:  python -m evaluation
+    """
+
+    print(msg)
+
+
+def pprint(index, ranking):
+    print(index)
+    for i, rank in enumerate(ranking):
+        print("[Rank = {:3}, Score = {:.3f}] {}".format(i + 1, rank[1], index.corpus.docs[rank[0]]))
 
 
 def evaluate_index(index):
+    print(index)
+    assert isinstance(index, domain.Index)
 
-    assert isinstance(index, irc.models.Index)
-
-    queries = irc.utils.read_queries(irc.config.FILES['queries'])
-    relevance = irc.utils.read_relevance(irc.config.FILES['relevance'])
+    queries = utils.read_queries(config.FILES['queries'])
+    relevance = utils.read_relevance(config.FILES['relevance'])
 
     for query in queries:
-        assert isinstance(query, irc.models.Query)
+        assert isinstance(query, domain.Query)
 
         ranking = index.search(query.term, n=None)
         query.num_docs_retrieved = len(ranking)
@@ -45,22 +62,160 @@ def evaluate_index(index):
     return queries
 
 
+def summary(queries):
+
+    n = 11
+    m = {
+        'precision': [0 for _ in range(0, n)],
+        'recall': [0 for _ in range(0, n)]
+    }
+
+    for query in queries:
+        for i in range(0, n):
+            m['precision'][i] += query.evaluation.loc[i]['precision']
+            m['recall'][i] = query.evaluation.loc[i]['recall']
+
+    for i in range(0, n):
+        m['precision'][i] /= n
+        m['recall'][i] /= n
+
+    return m
+
+
 def model(name):
 
     return {
-        'Binary': irc.models.BinaryIndex,
-        'TF': irc.models.TFIndex,
-        'TF-IDF': irc.models.TFIDFIndex,
-        'TF-IDF-S': irc.models.TFIDFSmoothIndex
+        'Binary': domain.BinaryIndex,
+        'TF': domain.TFIndex,
+        'TF-IDF': domain.TFIDFIndex,
+        'TF-IDF-Prob': domain.TFIDFProbabilisticIndex
     }[name]
+
+
+def mkfigure(metrics):
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    # import matplotlib.animation as animation
+
+    # x = np.linspace(0, 10)
+    # plt.plot(x, np.sin(x), '--', linewidth=2)
+    # plt.plot(x, np.cos(x), '--', linewidth=2)
+    for _name, _data in metrics.items():
+        plt.plot(_data['recall'], _data['precision'], '--', linewidth=2, label=_name)
+
+    plt.title('IR Evaluation')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision at recall level x')
+    plt.legend()
+
+    figname = os.path.join(config.PROJECT_BASE, 'img/evaluation.png')
+
+    if not os.path.exists(os.path.dirname(figname)):
+        os.makedirs(os.path.dirname(figname))
+
+    plt.savefig(figname)
+
+    print('Image saved @{}'.format(figname))
+
+
+    # def update_line(num, data, line):
+    #     line.set_data(data[..., :num])
+    #     return line,
+    #
+    # fig1 = plt.figure()
+    #
+    # data = np.random.rand(2, 25)
+    # l, = plt.plot([], [], 'r-')
+    # plt.xlim(0, 1)
+    # plt.ylim(0, 1)
+    # plt.xlabel('x')
+    # plt.title('test')
+    # line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
+    #                                    interval=50, blit=True)
+    # # line_ani.save('lines.mp4')
+    #
+    # fig2 = plt.figure()
+    #
+    # x = np.arange(-9, 10)
+    # y = np.arange(-9, 10).reshape(-1, 1)
+    # base = np.hypot(x, y)
+    # ims = []
+    # for add in np.arange(15):
+    #     ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
+    #
+    # im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
+    #                                    blit=True)
+    # # im_ani.save('im.mp4', metadata={'artist':'Guido'})
+    #
+    # # plt.show()
+    #
+    # plt.savefig('figure.png')
 
 
 if __name__ == '__main__':
 
-    import sys
+    print('Loading corpus...')
 
-    corpus = irc.utils.read_corpus_from_file(irc.config.FILES['corpus'])
+    corpus = utils.read_corpus_from_file(config.FILES['corpus'])
 
-    m = model(sys.argv[1])(corpus)
+    available_models = {
+        'TF': domain.TFIndex,
+        'TF-IDF': domain.TFIDFIndex,
+        'TF-IDF-Prob': domain.TFIDFProbabilisticIndex
+    }
 
-    evaluate_index(m)
+    index_models = {}
+
+    print('Building models...')
+
+    for k, model_class in available_models.items():
+        index_models[k] = model_class(corpus)
+
+    print('Running evaluations...')
+
+    results = map(lambda x, y: (x, evaluate_index(y)), index_models.keys(), (v for _, v in index_models.items()))
+
+    metrics = {}
+
+    for name, queries in results:
+        metrics[name] = summary(queries)
+
+    mkfigure(metrics)
+
+    import matplotlib.animation as animation
+    #
+    #
+    # def update_line(num, data, line):
+    #     line.set_data(data[..., :num])
+    #     return line,
+    #
+    #
+    # fig1 = plt.figure()
+    #
+    # data = np.random.rand(2, 25)
+    # l, = plt.plot([], [], 'r-')
+    # plt.xlim(0, 1)
+    # plt.ylim(0, 1)
+    # plt.xlabel('x')
+    # plt.title('test')
+    # line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
+    #                                    interval=50, blit=True)
+    # # line_ani.save('lines.mp4')
+    #
+    # fig2 = plt.figure()
+    #
+    # x = np.arange(-9, 10)
+    # y = np.arange(-9, 10).reshape(-1, 1)
+    # base = np.hypot(x, y)
+    # ims = []
+    # for add in np.arange(15):
+    #     ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
+    #
+    # im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
+    #                                    blit=True)
+    # # im_ani.save('im.mp4', metadata={'artist':'Guido'})
+    #
+    # # plt.show()
+    #
+    # plt.savefig('figure.png')
