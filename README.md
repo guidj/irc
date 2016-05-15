@@ -3,6 +3,16 @@
 Information Retrieval C
 
 
+## Environment
+
+The application was built using python2.7, and packages specified under [requirements.txt](requirements.txt)
+
+You can install them with:
+
+```sh
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ### Running Queries
