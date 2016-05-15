@@ -71,11 +71,12 @@ def summary(queries):
     }
 
     for query in queries:
+
         for i in range(0, n):
             m['precision'][i] += query.evaluation.loc[i]['precision']
 
     for i in range(0, n):
-        m['precision'][i] /= n
+        m['precision'][i] /= len(queries)
 
     return m
 

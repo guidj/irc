@@ -13,7 +13,7 @@ def usage():
 
         --index             : Index type. Options: Binary, TF, TF-IDF, TF-IDF-Prob
         --q                 : Query: 1-30
-        --n                 : Number of matches to be returned. Default is 10, * for all
+        --n                 : Number of matches to be returned. Default is 10, `all` for all
     """
 
     print(msg)
@@ -44,6 +44,18 @@ def parse_args(inp):
                 raise RuntimeError(
                     'Invalid --q value: {}. Should be integer between 1 and 30, inclusive'.format(inp[i + 1])
                 )
+
+        elif inp[i] in ('--n', '-n'):
+            if i + 1 >= argc:
+                raise RuntimeError('Missing value for parameter --n')
+
+            try:
+                args['n'] = int(inp[i + 1])
+            except ValueError:
+                if inp[i + 1] == "all":
+                    args['n'] = None
+                else:
+                    raise RuntimeError('Unknown value for parameter -n')
 
     required_params = ('index', 'q')
 
@@ -146,12 +158,12 @@ if __name__ == '__main__':
 
         index = evaluation.model(args['index'])(corpus)
         q = queries[args['q']]
-        results = index.search(q=q.term, n=args['n'])
+        results = index.search(q=q.term)
 
         scores.append((turn, evaluate_query(q, results, relevance)))
         turn += 1
 
-        pprint(index, ranking=results)
+        pprint(index, ranking=results[0:args['n']])
         print('Precision({:.3f}), Recall({:.3f})'.format(q.precision, q.recall))
 
         mkfigure(scores)
@@ -172,7 +184,14 @@ if __name__ == '__main__':
                 while True:
                     try:
                         inp = input('\nList the IDs of the relevant docs (e.g. 1, 13, 46): ')
-                        relevant = [int(x) for x in inp]
+
+                        if isinstance(inp, int):
+                            relevant = [inp]
+                        elif isinstance(inp, tuple):
+                            relevant = [int(x) for x in inp]
+                        else:
+                            print('[WARN] Wrong input.')
+                            continue
                     except ValueError:
                         print('[ERROR]: The IDs should an integers. Try again...')
                         continue
@@ -186,7 +205,7 @@ if __name__ == '__main__':
                         )
 
                         results = index.search(q=q.term, feedback=feedback)
-                        pprint(index, ranking=results)
+                        pprint(index, ranking=results[0:args['n']])
 
                         scores.append((turn, evaluate_query(q, results, relevance)))
                         print('Precision({:.3f}), Recall({:.3f})'.format(q.precision, q.recall))
