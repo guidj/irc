@@ -41,7 +41,7 @@ def evaluate_index(index):
 
         for i, rank in enumerate(ranking):
 
-            _doc_id, _doc_score = rank
+            _doc_id, _doc_score = rank[0] + 1, rank[1]
 
             if _doc_id in query.relevant_docs:
                 num_relevant_docs_retrieved += 1

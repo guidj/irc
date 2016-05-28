@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
             else:
 
-                focused = [rank[0] for rank in results[0:n]]
+                focused = [rank[0] + 1 for rank in results[0:n]]
                 pprint(index, results[0:n])
 
                 while True:
@@ -196,7 +196,6 @@ if __name__ == '__main__':
                         print('[ERROR]: The IDs should an integers. Try again...')
                         continue
                     else:
-
                         feedback = set(focused) & set(relevant)
                         print(
                             '[WARN] Ignoring docs not present in top {}: {}'.format(
