@@ -76,6 +76,13 @@ class Query(object):
         )
 
 
+class Feedback(object):
+
+    def __init__(self, relevant_docs, irrelevant_docs):
+        self.relevant_docs = relevant_docs
+        self.irrelevant_docs = irrelevant_docs
+
+
 class Index(object):
     def __init__(self, corpus):
         self._corpus = corpus
@@ -100,6 +107,44 @@ class Index(object):
     def corpus(self):
         return self._corpus
 
+    def rocchio(self, term_weight, feedback):
+
+        assert isinstance(feedback, Feedback)
+        _docs_term_weights = {}
+        _term_scores = {}
+        for _term_id, _score in term_weight:
+            _term_scores[_term_id] = _score
+
+        for doc in self.corpus.docs:
+
+            if doc.id in feedback.relevant_docs:
+                vq = self._dictionary.doc2bow(pre_process_document(doc.body))
+                _docs_term_weights[doc.id] = self.model[vq]
+
+        for _doc_id, _doc_term_weight_vector in _docs_term_weights.items():
+            for _term_id, _score in _doc_term_weight_vector:
+                if _term_id in _term_scores.keys():
+                    _term_scores[_term_id] += _score
+                else:
+                    _term_scores[_term_id] = _score
+
+        _docs_term_weights.clear()
+
+        for doc in self.corpus.docs:
+
+            if doc.id in feedback.irrelevant_docs:
+                vq = self._dictionary.doc2bow(pre_process_document(doc.body))
+                _docs_term_weights[doc.id] = self.model[vq]
+
+        for _doc_id, _doc_term_weight_vector in _docs_term_weights.items():
+            for _term_id, _score in _doc_term_weight_vector:
+                if _term_id in _term_scores.keys():
+                    _term_scores[_term_id] -= _score
+                else:
+                    _term_scores[_term_id] = _score
+
+        return [(_term_id, _score) for _term_id, _score in _term_scores.items() if _score > 0]
+
 
 class BinaryIndex(Index):
     def __str__(self):
@@ -116,25 +161,6 @@ class BinaryIndex(Index):
     def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
-
-        if feedback:
-            _docs_term = {}
-            _chosen_terms = []
-            _counter = collections.Counter()
-
-            for doc in self.corpus.docs:
-                if doc.id in feedback:
-                    _docs_term[doc.id] = set(pre_process_document(doc.body))
-                    for _term in _docs_term[doc.id]:
-                        _counter[_term] += 1
-
-            for _term, _count in _counter.items():
-                if _count >= len(feedback) / 2.0 and _term not in pq:
-                    _chosen_terms.append(_term)
-                    pq.append(_term)
-
-            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
-
         vq = self._dictionary.doc2bow(pq)
 
         terms = [x[0] for x in vq]
@@ -173,28 +199,13 @@ class TFIndex(Index):
     def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
+        vq = self._dictionary.doc2bow(pq)
+        term_tf_idf = self.model[vq]
 
         if feedback:
-            _docs_term = {}
-            _chosen_terms = []
-            _counter = collections.Counter()
+            term_tf_idf = self.rocchio(term_tf_idf, feedback)
 
-            for doc in self.corpus.docs:
-                if doc.id in feedback:
-                    _docs_term[doc.id] = set(pre_process_document(doc.body))
-                    for _term in _docs_term[doc.id]:
-                        _counter[_term] += 1
-
-            for _term, _count in _counter.items():
-                if _count >= len(feedback) / 2.0 and _term not in pq:
-                    _chosen_terms.append(_term)
-                    pq.append(_term)
-
-            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
-
-        vq = self._dictionary.doc2bow(pq)
-        qtfidf = self.model[vq]
-        sim = self.index[qtfidf]
+        sim = self.index[term_tf_idf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
@@ -219,28 +230,13 @@ class TFIDFIndex(Index):
     def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
+        vq = self._dictionary.doc2bow(pq)
+        query_tf_idf = self.model[vq]
 
         if feedback:
-            _docs_term = {}
-            _chosen_terms = []
-            _counter = collections.Counter()
+            query_tf_idf = self.rocchio(query_tf_idf, feedback)
 
-            for doc in self.corpus.docs:
-                if doc.id in feedback:
-                    _docs_term[doc.id] = set(pre_process_document(doc.body))
-                    for _term in _docs_term[doc.id]:
-                        _counter[_term] += 1
-
-            for _term, _count in _counter.items():
-                if _count >= len(feedback) / 2.0 and _term not in pq:
-                    _chosen_terms.append(_term)
-                    pq.append(_term)
-
-            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
-
-        vq = self._dictionary.doc2bow(pq)
-        qtfidf = self.model[vq]
-        sim = self.index[qtfidf]
+        sim = self.index[query_tf_idf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)
@@ -268,28 +264,10 @@ class TFIDFProbabilisticIndex(Index):
     def search(self, q, n=None, feedback=None):
 
         pq = pre_process_document(q)
-
-        if feedback:
-            _docs_term = {}
-            _chosen_terms = []
-            _counter = collections.Counter()
-
-            for doc in self.corpus.docs:
-                if doc.id in feedback:
-                    _docs_term[doc.id] = set(pre_process_document(doc.body))
-                    for _term in _docs_term[doc.id]:
-                        _counter[_term] += 1
-
-            for _term, _count in _counter.items():
-                if _count >= len(feedback) / 2.0 and _term not in pq:
-                    _chosen_terms.append(_term)
-                    pq.append(_term)
-
-            print('Using feedback terms: {}...'.format(_chosen_terms[0:10]))
-
         vq = self._dictionary.doc2bow(pq)
-        qtfidf = self.model[vq]
-        sim = self.index[qtfidf]
+        term_tf_idf = self.model[vq]
+
+        sim = self.index[term_tf_idf]
 
         ranking = [x for x in sorted(enumerate(sim), key=operator.itemgetter(1), reverse=True) if x[1] > 0]
         limit = n if isinstance(n, int) else len(ranking)

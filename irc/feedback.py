@@ -1,8 +1,8 @@
 from irc import config
 from irc import constants
+from irc import domain
 from irc import evaluation
 from irc import utils
-from irc import domain
 
 
 def usage():
@@ -76,7 +76,6 @@ def pprint(index, ranking):
 
 
 def evaluate_query(query, ranking, relevance):
-
     assert isinstance(query, domain.Query)
 
     query.num_docs_retrieved = len(ranking)
@@ -196,10 +195,11 @@ if __name__ == '__main__':
                         print('[ERROR]: The IDs should an integers. Try again...')
                         continue
                     else:
-                        feedback = set(focused) & set(relevant)
+                        feedback = domain.Feedback(set(focused) & set(relevant),
+                                                   [x for x in focused if x not in relevant])
                         print(
                             '[WARN] Ignoring docs not present in top {}: {}'.format(
-                                n, [x for x in feedback if x not in relevant]
+                                n, [x for x in feedback.relevant_docs if x not in relevant]
                             )
                         )
 
