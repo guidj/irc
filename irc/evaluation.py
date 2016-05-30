@@ -144,4 +144,9 @@ if __name__ == '__main__':
     for name, queries in results:
         metrics[name] = summary(queries)
 
+        print('Model: {}'.format(name))
+        data = metrics[name]
+        for i in range(0, len(data['recall'])):
+            print('{:.3f}, {:.3f}'.format(data['recall'][i], data['precision'][i]))
+
     mkfigure(metrics)
